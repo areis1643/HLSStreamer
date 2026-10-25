@@ -1,0 +1,27 @@
+name: ipa
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Derle (imzasız)
+        run: |
+          xcodebuild -list -project Wingspan.xcodeproj
+          xcodebuild -project Wingspan.xcodeproj -scheme Wingspan -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            build | tail -40
+      - name: IPA paketle
+        run: |
+          app=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -1)
+          echo "app: $app"; ls "$app/PlugIns" || true
+          mkdir Payload && cp -R "$app" Payload/
+          zip -qry HLSStreamer.ipa Payload
+          ls -la HLSStreamer.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: HLSStreamer.ipa
